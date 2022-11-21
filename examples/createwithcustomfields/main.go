@@ -7,7 +7,7 @@ import (
 	"strings"
 	"syscall"
 
-	jira "github.com/andygrunwald/go-jira"
+	jira "github.com/space307/go-jira"
 	"github.com/trivago/tgo/tcontainer"
 	"golang.org/x/term"
 )
