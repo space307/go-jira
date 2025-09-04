@@ -1201,6 +1201,43 @@ func (s *IssueService) SearchPages(jql string, options *SearchOptions, f func(Is
 	return s.SearchPagesWithContext(context.Background(), jql, options, f)
 }
 
+// SearchApproximateCountWithContext will search for a quick, approximate count of tickets according to the jql
+// This method returns an approximate count of issues that match the given JQL query.
+// It's much faster than doing a full search when you only need to know the total count.
+//
+// Jira API docs: https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issue-search/#api-rest-api-3-search-approximate-count-post
+func (s *IssueService) SearchApproximateCountWithContext(ctx context.Context, jql string) (int, *Response, error) {
+	apiEndpoint := "rest/api/3/search/approximate-count"
+
+	payload := struct {
+		JQL string `json:"jql"`
+	}{
+		JQL: jql,
+	}
+
+	req, err := s.client.NewRequestWithContext(ctx, "POST", apiEndpoint, payload)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	var v struct {
+		Count int `json:"count"`
+	}
+
+	resp, err := s.client.Do(req, &v)
+	if err != nil {
+		err = NewJiraError(resp, err)
+		return 0, resp, err
+	}
+
+	return v.Count, resp, nil
+}
+
+// SearchApproximateCount wraps SearchApproximateCountWithContext using the background context.
+func (s *IssueService) SearchApproximateCount(jql string) (int, *Response, error) {
+	return s.SearchApproximateCountWithContext(context.Background(), jql)
+}
+
 // GetCustomFieldsWithContext returns a map of customfield_* keys with string values
 func (s *IssueService) GetCustomFieldsWithContext(ctx context.Context, issueID string) (CustomFields, *Response, error) {
 	apiEndpoint := fmt.Sprintf("rest/api/2/issue/%s", issueID)

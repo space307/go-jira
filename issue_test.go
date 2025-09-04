@@ -773,6 +773,87 @@ func TestIssueService_SearchPages_EmptyResult(t *testing.T) {
 	}
 }
 
+func TestIssueService_SearchApproximateCount(t *testing.T) {
+	setup()
+	defer teardown()
+	testMux.HandleFunc("/rest/api/3/search/approximate-count", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "POST")
+		testRequestURL(t, r, "/rest/api/3/search/approximate-count")
+
+		// Verify the request body
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("Error reading request body: %s", err)
+		}
+
+		var payload struct {
+			JQL string `json:"jql"`
+		}
+		err = json.Unmarshal(body, &payload)
+		if err != nil {
+			t.Errorf("Error unmarshaling request: %s", err)
+		}
+
+		expectedJQL := "project in (FOO, BAR)"
+		if payload.JQL != expectedJQL {
+			t.Errorf("Expected JQL %s, got %s", expectedJQL, payload.JQL)
+		}
+
+		fmt.Fprint(w, `{"count": 3}`)
+	})
+
+	count, resp, err := testClient.Issue.SearchApproximateCount("project in (FOO, BAR)")
+	if err != nil {
+		t.Errorf("Error given: %s", err)
+	}
+	if resp == nil {
+		t.Error("Expected response. Response is nil")
+	}
+	if count != 3 {
+		t.Errorf("Expected count 3, got %d", count)
+	}
+}
+
+func TestIssueService_SearchApproximateCount_EmptyJQL(t *testing.T) {
+	setup()
+	defer teardown()
+	testMux.HandleFunc("/rest/api/3/search/approximate-count", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "POST")
+		testRequestURL(t, r, "/rest/api/3/search/approximate-count")
+
+		// Verify the request body
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("Error reading request body: %s", err)
+		}
+
+		var payload struct {
+			JQL string `json:"jql"`
+		}
+		err = json.Unmarshal(body, &payload)
+		if err != nil {
+			t.Errorf("Error unmarshaling request: %s", err)
+		}
+
+		if payload.JQL != "" {
+			t.Errorf("Expected empty JQL, got %s", payload.JQL)
+		}
+
+		fmt.Fprint(w, `{"count": 0}`)
+	})
+
+	count, resp, err := testClient.Issue.SearchApproximateCount("")
+	if err != nil {
+		t.Errorf("Error given: %s", err)
+	}
+	if resp == nil {
+		t.Error("Expected response. Response is nil")
+	}
+	if count != 0 {
+		t.Errorf("Expected count 0, got %d", count)
+	}
+}
+
 func TestIssueService_GetCustomFields(t *testing.T) {
 	setup()
 	defer teardown()
